@@ -1,17 +1,19 @@
+DIRS := $(patsubst po-export/%/,%,$(wildcard po-export/*/))
+POFILES := $(wildcard po-export/*/*.po)
 
-all: buildmo
+all: $(POFILES:po=mo)
 
-buildmo:
-	@echo "Building the mo files"
-	# WARNING: the second sed below will only works correctly with the languages that don't contain "-"
-	for dir in `ls po-export`; do \
-		for file in `ls po-export/$$dir/*.po`; do \
-			lang=`echo $$file | sed 's/\.po$$//' | sed 's/.*\-//'`; \
-			install -d usr/share/locale/$$lang/LC_MESSAGES/; \
-			msgfmt -o usr/share/locale/$$lang/LC_MESSAGES/$$dir.mo $$file; \
-		done \
-	 done
+install: all
+	for dir in $(DIRS); do \
+	    for file in po-export/$$dir/$$dir-*.mo; do \
+	        lang=$${file##*/$$dir-}; \
+	        lang=$${lang%.mo}; \
+	        install -Dm644 $$file "$(DESTDIR)/usr/share/locale/$$lang/LC_MESSAGES/$$dir.mo"; \
+	    done; \
+	done
+
+%.mo: %.po
+	msgfmt -o $@ $<
 
 clean:
-	rm -rf usr
-
+	rm -rf po-export/*/*.mo
